@@ -44,19 +44,7 @@ class ZygiskModule : public zygisk::ModuleBase {
     }
 
     void preAppSpecialize(zygisk::AppSpecializeArgs *args) override {
-        int cfd = api_->connectCompanion();
-        if (cfd < 0) {
-            LOGE("Failed to connect to companion: %s", strerror(errno));
-
-            return;
-        }
-
-        uint8_t injection_hardening_disabled = 0;
-        if (read(cfd, &injection_hardening_disabled, sizeof(injection_hardening_disabled)) < 0) {
-            LOGE("Failed to read from companion socket: %s", strerror(errno));
-        }
-
-        close(cfd);
+        bool injection_hardening_disabled = (access("/data/adb/disable_injection_hardening", F_OK) == 0);
 
         if (!injection_hardening_disabled) {
             uint32_t flags = api_->getFlags();
@@ -122,22 +110,4 @@ class ZygiskModule : public zygisk::ModuleBase {
 };
 }  // namespace lspd
 
-void relsposed_companion(int lib_fd) {
-    /* INFO: The only current task we do in companion now is to check if
-               /data/adb/disable_injection_hardening file exists. */
-    uint8_t file_exists = 0;
-    if (access("/data/adb/disable_injection_hardening", F_OK) == 0) {
-        LOGD("Found /data/adb/disable_injection_hardening, disabling injection hardening");
-
-        file_exists = 1;
-    }
-
-    if (write(lib_fd, &file_exists, sizeof(file_exists)) < 0) {
-        LOGE("Failed to write to companion socket: %s", strerror(errno));
-    }
-
-    close(lib_fd);
-}
-
 REGISTER_ZYGISK_MODULE(lspd::ZygiskModule);
-REGISTER_ZYGISK_COMPANION(relsposed_companion);
