@@ -1,6 +1,6 @@
 # LSPosed Framework
 
-[![Build](https://img.shields.io/github/actions/workflow/status/JingMatrix/LSPosed/core.yml?branch=master&event=push&logo=github&label=Build)](https://github.com/JingMatrix/LSPosed/actions/workflows/core.yml?query=event%3Apush+branch%3Amaster+is%3Acompleted) [![Crowdin](https://img.shields.io/badge/Localization-Crowdin-blueviolet?logo=Crowdin)](https://crowdin.com/project/lsposed_jingmatrix) [![Download](https://img.shields.io/github/v/release/JingMatrix/LSPosed?color=orange&logoColor=orange&label=Download&logo=DocuSign)](https://github.com/JingMatrix/LSPosed/releases/latest) [![Total](https://shields.io/github/downloads/JingMatrix/LSPosed/total?logo=Bookmeter&label=Counts&logoColor=yellow&color=yellow)](https://github.com/JingMatrix/LSPosed/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/ThePedroo/ReLSPosed/core.yml?branch=master&event=push&logo=github&label=Build)](https://github.com/ThePedroo/ReLSPosed/actions/workflows/core.yml?query=event%3Apush+branch%3Amaster+is%3Acompleted) [![Crowdin](https://img.shields.io/badge/Localization-Crowdin-blueviolet?logo=Crowdin)](https://crowdin.com/project/lsposed_jingmatrix) [![Download](https://img.shields.io/github/v/release/ThePedroo/ReLSPosed?color=orange&logoColor=orange&label=Download&logo=DocuSign)](https://github.com/ThePedroo/ReLSPosed/releases/latest) [![Total](https://shields.io/github/downloads/ThePedroo/ReLSPosed/total?logo=Bookmeter&label=Counts&logoColor=yellow&color=yellow)](https://github.com/ThePedroo/ReLSPosed/releases)
 
 ## Introduction 
 
@@ -22,14 +22,14 @@ Android 8.1 ~ 16
 
 ## Download
 
-- For stable releases, please go to [Github Releases page](https://github.com/JingMatrix/LSPosed/releases)
-- For canary build, please check [Github Actions](https://github.com/JingMatrix/LSPosed/actions/workflows/core.yml?query=branch%3Amaster)
+- For stable releases, please go to [Github Releases page](https://github.com/ThePedroo/ReLSPosed/releases)
+- For canary build, please check [Github Actions](https://github.com/ThePedroo/ReLSPosed/actions/workflows/core.yml?query=branch%3Amaster)
 
 Note: debug builds are only available in Github Actions.
 
 ## Get Help
 **Only bug reports from **THE LATEST DEBUG BUILD** will be accepted.**
-- GitHub issues: [Issues](https://github.com/JingMatrix/LSPosed/issues/)
+- GitHub issues: [Issues](https://github.com/ThePedroo/ReLSPosed/issues/)
 - (For Chinese speakers) 本项目只接受英语**标题**的issue。如果您不懂英语，请使用[翻译工具](https://www.deepl.com/zh/translator)
 
 ## For Developers
@@ -44,7 +44,7 @@ We use our own module repository. We welcome developers to submit modules to our
 
 ## Community Discussion
 
-[Troubleshooting guide](https://github.com/JingMatrix/LSPosed/issues/123) and [Disscusions](https://github.com/JingMatrix/LSPosed/discussions).
+[Troubleshooting guide](https://github.com/ThePedroo/ReLSPosed/issues/123) and [Disscusions](https://github.com/ThePedroo/ReLSPosed/discussions).
 
 ## Translation Contributing
 
