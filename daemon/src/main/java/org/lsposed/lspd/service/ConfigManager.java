@@ -95,9 +95,12 @@ public class ConfigManager {
 
     private final SQLiteDatabase db = openDb();
 
+    static final Path basePath = Paths.get("/data/adb/lspd");
+
     private boolean verboseLog = true;
     private boolean logWatchdog = true;
     private boolean dexObfuscate = true;
+    private boolean injectionHardening = true;
     private boolean enableStatusNotification = true;
     private Path miscPath = null;
 
@@ -272,6 +275,9 @@ public class ConfigManager {
 
         bool = config.get("enable_log_watchdog");
         logWatchdog = bool == null || (boolean) bool;
+        
+        bool = config.get("disable_injection_hardening");
+        injectionHardening = bool == null || (boolean) bool;
 
         bool = config.get("enable_dex_obfuscate");
         dexObfuscate = bool == null || (boolean) bool;
@@ -1035,6 +1041,45 @@ public class ConfigManager {
         return logWatchdog;
     }
 
+    public void setInjectionHardening(boolean on) {
+        File configFile = new File("/data/adb/disable_injection_hardening");
+        if (on) {
+            try {
+                if(!configFile.exists()) {
+                    configFile.createNewFile();
+                }
+                Os.chmod(configFile.getAbsolutePath(), 0644);
+                Log.d(TAG, "injection hardening enabled");
+                updateModulePrefs("lspd", 0, "config", "disable_injection_hardening", on);
+                injectionHardening = on;
+            }
+            catch (Throwable e) {
+                Log.e(TAG, "failed to create config file for injection hardening", e);
+                return;
+            }   
+        } else {
+            try {
+                if(configFile.exists()) {
+                    configFile.delete();
+                }
+                Log.d(TAG, "injection hardening disabled");
+                updateModulePrefs("lspd", 0, "config", "disable_injection_hardening", on);
+                injectionHardening = on;
+            }
+            catch (Throwable e) {
+                Log.e(TAG, "failed to delete config file for injection hardening", e);
+                return;
+            }
+        }
+    }
+
+    public boolean isInjectionHardeningEnabled() {
+        File configFile = new File("/data/adb/disable_injection_hardening");
+        injectionHardening = configFile.exists();
+        updateModulePrefs("lspd", 0, "config", "disable_injection_hardening", injectionHardening);
+        return injectionHardening;
+    }
+
     public void setDexObfuscate(boolean on) {
         updateModulePrefs("lspd", 0, "config", "enable_dex_obfuscate", on);
     }
@@ -1172,25 +1217,18 @@ public class ConfigManager {
 
     public List<String> getDenyListPackages() {
         List<String> result = new ArrayList<>();
-        if (!getApi().equals("Zygisk")) return result;
-        if (!ConfigFileManager.magiskDbPath.exists()) return result;
-        try (final SQLiteDatabase magiskDb =
-                     SQLiteDatabase.openDatabase(ConfigFileManager.magiskDbPath, new SQLiteDatabase.OpenParams.Builder().addOpenFlags(SQLiteDatabase.OPEN_READONLY).build())) {
-            try (Cursor cursor = magiskDb.query("settings", new String[]{"value"}, "`key`=?", new String[]{"denylist"}, null, null, null)) {
-                if (!cursor.moveToNext()) return result;
-                int valueIndex = cursor.getColumnIndex("value");
-                if (valueIndex >= 0 && cursor.getInt(valueIndex) == 0) return result;
+        if(!isInjectionHardeningEnabled())
+        {
+            try
+            {
+                List<PackageInfo> infos = PackageService.getInstalledPackagesFromAllUsers(PackageService.MATCH_ALL_FLAGS, false).getList();
+                return infos.parallelStream()
+                    .filter(info -> DenylistManager.isInDenylist(info.packageName))
+                    .map(info -> info.packageName)
+                    .collect(Collectors.toList());
+            } catch (Throwable e) {
+                Log.e(TAG, "get denylist", e);
             }
-            try (Cursor cursor = magiskDb.query(true, "denylist", new String[]{"package_name"}, null, null, null, null, null, null, null)) {
-                if (cursor == null) return result;
-                int packageNameIdx = cursor.getColumnIndex("package_name");
-                while (cursor.moveToNext()) {
-                    result.add(cursor.getString(packageNameIdx));
-                }
-                return result;
-            }
-        } catch (Throwable e) {
-            Log.e(TAG, "get denylist", e);
         }
         return result;
     }
