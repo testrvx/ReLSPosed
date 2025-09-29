@@ -198,7 +198,7 @@ bool magisk_is_in_denylist(const char *const process) {
     }
 
     if (is_using_sulist) return result[0] == '\0';
-    else return result[0] != '\0';
+    else return result[0] == '\0';
 }
 
 
