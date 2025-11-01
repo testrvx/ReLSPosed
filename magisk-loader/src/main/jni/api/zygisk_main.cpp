@@ -63,17 +63,16 @@ class ZygiskModule : public zygisk::ModuleBase {
             bool isShell = strcmp(name, shell_name) == 0;
             bool isLspManager = strcmp(name, lsp_manager) == 0;
             if (isShell || isLspManager) {
-                LOGD("Process is com.android.shell or org.lsposed.manager, bypassing denylist check");
                 env_->ReleaseStringUTFChars(args->nice_name, name);
                 goto bypass_denylist;
             }
 
-            LOGE("Process {} is on denylist, cannot specialize", name);
+            // Do not log denylist processes here to avoid expensive logging in hot paths.
             env_->ReleaseStringUTFChars(args->nice_name, name);
             should_ignore = true;
             return;
         } else {
-            LOGD("Injection hardening is disabled");
+            // Intentionally avoid debug logging here to reduce overhead in hot paths.
         }
 
         bypass_denylist:
@@ -84,7 +83,7 @@ class ZygiskModule : public zygisk::ModuleBase {
 
     void postAppSpecialize(const zygisk::AppSpecializeArgs *args) override {
         if (should_ignore) {
-            LOGD("Ignoring postAppSpecialize due to injection hardening being enabled");
+            // Avoid debug logging in this hot path.
             api_->setOption(zygisk::DLCLOSE_MODULE_LIBRARY);
             return;
         }
