@@ -225,18 +225,13 @@ int main(int argc, char **argv) {
 
     LOGD("sock: %s %d", sock.sun_path + 1, stock_fd);
 
-    const char *new_argv[argc + 2];
-    for (int i = 0; i < argc; i++) new_argv[i] = argv[i];
-    new_argv[argc] = "--inline-max-code-units=0";
-    new_argv[argc + 1] = NULL;
-
     char liboat_fd_path[64];
     snprintf(liboat_fd_path, sizeof(liboat_fd_path), "/proc/%d/fd/%d", getpid(), hooker_fd);
 
     setenv("LD_PRELOAD", liboat_fd_path, 1);
     LOGD("Set env LD_PRELOAD=%s", liboat_fd_path);
 
-    fexecve(stock_fd, (char **)new_argv, environ);
+    fexecve(stock_fd, (char **)argv, environ);
 
     PLOGE("fexecve failed");
 
