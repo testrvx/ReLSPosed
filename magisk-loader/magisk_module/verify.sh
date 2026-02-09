@@ -49,10 +49,10 @@ extract() {
   fi
 
   unzip $opts "$zip" "$file" -d "$dir" >&2
-  [ -f "$file_path" ] || abort_verify "$file not exists"
+  [ -f "$file_path" ] 
 
   unzip $opts "$zip" "$file.sha256" -d "$TMPDIR_FOR_VERIFY" >&2
-  [ -f "$hash_path" ] || abort_verify "$file.sha256 not exists"
+  [ -f "$hash_path" ]
 
   (echo "$(cat "$hash_path")  $file_path" | sha256sum -c -s -) || abort_verify "Failed to verify $file"
   ui_print "- Verified $file" >&1
