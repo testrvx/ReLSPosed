@@ -194,8 +194,9 @@ int main(int argc, char **argv) {
             char *new_argv[argc + 2];
             memset(new_argv, 0, sizeof(new_argv));
 
-            new_argv[0] = stock_fd_path;
-            memcpy(&new_argv[1], &argv[1], sizeof(char *) * argc);
+            new_argv[0] = (char *)linker_path;
+            new_argv[1] = stock_fd_path;
+            memcpy(&new_argv[2], &argv[1], sizeof(char *) * argc);
 
             execve(linker_path, new_argv, environ);
             LOGE("execve failed");
@@ -239,11 +240,12 @@ int main(int argc, char **argv) {
 
     setenv("LD_PRELOAD", liboat_fd_path, 1);
 
-    char *new_argv[argc + 3];
+    char *new_argv[argc + 2];
     memset(new_argv, 0, sizeof(new_argv));
 
-    new_argv[0] = stock_fd_path;
-    memcpy(&new_argv[1], &argv[1], sizeof(char *) * argc);
+    new_argv[0] = (char *)linker_path;
+    new_argv[1] = stock_fd_path;
+    memcpy(&new_argv[2], &argv[1], sizeof(char *) * argc);
 
     execve(linker_path, new_argv, environ);
 
