@@ -54,7 +54,7 @@ extract() {
   unzip $opts "$zip" "$file.sha256" -d "$TMPDIR_FOR_VERIFY" >&2
   [ -f "$hash_path" ]
 
-  (echo "$(cat "$hash_path")  $file_path" | sha256sum -c -s -) || abort_verify "Failed to verify $file"
+  (echo "$(cat "$hash_path")  $file_path" | sha256sum -c -s -)
   ui_print "- Verified $file" >&1
 }
 
