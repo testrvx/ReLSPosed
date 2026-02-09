@@ -194,8 +194,6 @@ static bool is_targeted_by_any_module(const char *package_name, int user_id) {
   if (!sqlite3_open || !sqlite3_prepare_v2 || !sqlite3_bind_text || !sqlite3_bind_int || !sqlite3_step || !sqlite3_finalize || !sqlite3_close) {
     LOGE("Missing sqlite symbols");
 
-    dlclose(lib);
-
     return false;
   }
 
@@ -205,8 +203,6 @@ static bool is_targeted_by_any_module(const char *package_name, int user_id) {
     LOGE("Failed to open sqlite db: {}", db_path);
 
     if (db) sqlite3_close(db);
-
-    dlclose(lib);
 
     return false;
   }
@@ -218,8 +214,6 @@ static bool is_targeted_by_any_module(const char *package_name, int user_id) {
 
     if (db) sqlite3_close(db);
 
-    dlclose(lib);
-
     return false;
   }
 
@@ -229,8 +223,6 @@ static bool is_targeted_by_any_module(const char *package_name, int user_id) {
     if (stmt) sqlite3_finalize(stmt);
     if (db) sqlite3_close(db);
 
-    dlclose(lib);
-
     return false;
   }
   
@@ -239,8 +231,6 @@ static bool is_targeted_by_any_module(const char *package_name, int user_id) {
     
     if (stmt) sqlite3_finalize(stmt);
     if (db) sqlite3_close(db);
-
-    dlclose(lib);
 
     return false;
   }
