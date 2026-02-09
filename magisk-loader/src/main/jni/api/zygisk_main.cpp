@@ -255,7 +255,6 @@ static bool is_targeted_by_any_module(const char *package_name, int user_id) {
 
   sqlite3_finalize(stmt);
   sqlite3_close(db);
-  dlclose(lib);
 
   return false;
 }
