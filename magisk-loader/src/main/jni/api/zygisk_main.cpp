@@ -170,82 +170,98 @@ class ZygiskModule : public zygisk::ModuleBase {
 };
 }  // namespace lspd
 
-/* TODO: Perhaps keep libsqlite loaded? */
+/* SQLite Definitions & Loader */
+typedef struct sqlite3 sqlite3;
+typedef struct sqlite3_stmt sqlite3_stmt;
+
+struct SQLiteAPI {
+    void *lib = nullptr;
+    int (*open)(const char *, sqlite3 **) = nullptr;
+    int (*prepare_v2)(sqlite3 *, const char *, int, sqlite3_stmt **, const char **) = nullptr;
+    int (*bind_text)(sqlite3_stmt *, int, const char *, int, void (*)(void *)) = nullptr;
+    int (*bind_int)(sqlite3_stmt *, int, int) = nullptr;
+    int (*step)(sqlite3_stmt *) = nullptr;
+    int (*finalize)(sqlite3_stmt *) = nullptr;
+    int (*close)(sqlite3 *) = nullptr;
+
+    bool load() {
+        if (lib) return true;
+
+        lib = dlopen("libsqlite.so", RTLD_NOW | RTLD_LOCAL);
+        if (!lib) lib = dlopen("libsqlite3.so", RTLD_NOW | RTLD_LOCAL);
+        if (!lib) return false;
+
+        open = (decltype(open))dlsym(lib, "sqlite3_open");
+        prepare_v2 = (decltype(prepare_v2))dlsym(lib, "sqlite3_prepare_v2");
+        bind_text = (decltype(bind_text))dlsym(lib, "sqlite3_bind_text");
+        bind_int = (decltype(bind_int))dlsym(lib, "sqlite3_bind_int");
+        step = (decltype(step))dlsym(lib, "sqlite3_step");
+        finalize = (decltype(finalize))dlsym(lib, "sqlite3_finalize");
+        close = (decltype(close))dlsym(lib, "sqlite3_close");
+
+        if (!open || !prepare_v2 || !bind_text || !bind_int || !step || !finalize || !close) {
+            dlclose(lib);
+            lib = nullptr;
+            return false;
+        }
+        return true;
+    }
+};
+
 static bool is_targeted_by_any_module(const char *package_name, int user_id) {
-  void *lib = dlopen("libsqlite.so", RTLD_NOW | RTLD_LOCAL);
-  if (!lib) lib = dlopen("libsqlite3.so", RTLD_NOW | RTLD_LOCAL);
-  if (!lib) {
-    LOGE("Failed to dlopen sqlite: {}", dlerror());
-
-    return false;
-  }
-
-  typedef struct sqlite3 sqlite3;
-  typedef struct sqlite3_stmt sqlite3_stmt;
-
-  int (*sqlite3_open)(const char *, sqlite3 **) = (int (*)(const char *, sqlite3 **))dlsym(lib, "sqlite3_open");
-  int (*sqlite3_prepare_v2)(sqlite3 *, const char *, int, sqlite3_stmt **, const char **) = (int (*)(sqlite3 *, const char *, int, sqlite3_stmt **, const char **))dlsym(lib, "sqlite3_prepare_v2");
-  int (*sqlite3_bind_text)(sqlite3_stmt *, int, const char *, int, void (*)(void *)) = (int (*)(sqlite3_stmt *, int, const char *, int, void (*)(void *)))dlsym(lib, "sqlite3_bind_text");
-  int (*sqlite3_bind_int)(sqlite3_stmt *, int, int) = (int (*)(sqlite3_stmt *, int, int))dlsym(lib, "sqlite3_bind_int");
-  int (*sqlite3_step)(sqlite3_stmt *) = (int (*)(sqlite3_stmt *))dlsym(lib, "sqlite3_step");
-  int (*sqlite3_finalize)(sqlite3_stmt *) = (int (*)(sqlite3_stmt *))dlsym(lib, "sqlite3_finalize");
-  int (*sqlite3_close)(sqlite3 *) = (int (*)(sqlite3 *))dlsym(lib, "sqlite3_close");
-
-  if (!sqlite3_open || !sqlite3_prepare_v2 || !sqlite3_bind_text || !sqlite3_bind_int || !sqlite3_step || !sqlite3_finalize || !sqlite3_close) {
-    LOGE("Missing sqlite symbols");
-
+  // Use a static instance to keep the library loaded across calls
+  static SQLiteAPI sql;
+  
+  // Attempt to load only if not already loaded
+  if (!sql.load()) {
+    LOGE("Failed to load sqlite or find symbols: {}", dlerror());
     return false;
   }
 
   sqlite3 *db = NULL;
   const char *db_path = "/data/adb/lspd/config/modules_config.db";
-  if (sqlite3_open(db_path, &db) != 0 || db == NULL) {
+  if (sql.open(db_path, &db) != 0 || db == NULL) {
     LOGE("Failed to open sqlite db: {}", db_path);
 
-    if (db) sqlite3_close(db);
-
+    if (db) sql.close(db);
+    // Do NOT dlclose(sql.lib) here
     return false;
   }
 
-  const char *sql = "SELECT 1 FROM scope INNER JOIN modules ON scope.mid = modules.mid WHERE scope.app_pkg_name = ? AND scope.user_id = ? AND modules.enabled = 1 LIMIT 1;";
+  const char *query = "SELECT 1 FROM scope INNER JOIN modules ON scope.mid = modules.mid WHERE scope.app_pkg_name = ? AND scope.user_id = ? AND modules.enabled = 1 LIMIT 1;";
   sqlite3_stmt *stmt = NULL;
-  if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != 0) {
+  if (sql.prepare_v2(db, query, -1, &stmt, NULL) != 0) {
     LOGE("Failed to prepare sqlite statement");
 
-    if (db) sqlite3_close(db);
-
+    if (db) sql.close(db);
     return false;
   }
 
-  if (sqlite3_bind_text(stmt, 1, package_name, (int)strlen(package_name), NULL) != 0) {
+  if (sql.bind_text(stmt, 1, package_name, (int)strlen(package_name), NULL) != 0) {
     LOGE("Failed to bind package name");
     
-    if (stmt) sqlite3_finalize(stmt);
-    if (db) sqlite3_close(db);
-
+    if (stmt) sql.finalize(stmt);
+    if (db) sql.close(db);
     return false;
   }
   
-  if (sqlite3_bind_int(stmt, 2, user_id) != 0) {
+  if (sql.bind_int(stmt, 2, user_id) != 0) {
     LOGE("Failed to bind user id");
     
-    if (stmt) sqlite3_finalize(stmt);
-    if (db) sqlite3_close(db);
-
+    if (stmt) sql.finalize(stmt);
+    if (db) sql.close(db);
     return false;
   }
 
-  if (sqlite3_step(stmt) == 100) {
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-    dlclose(lib);
-
+  if (sql.step(stmt) == 100) { // SQLITE_ROW
+    sql.finalize(stmt);
+    sql.close(db);
     return true;
   }
 
-  sqlite3_finalize(stmt);
-  sqlite3_close(db);
-
+  sql.finalize(stmt);
+  sql.close(db);
+  // Library handle (sql.lib) is intentionally left open for the next call
   return false;
 }
 
