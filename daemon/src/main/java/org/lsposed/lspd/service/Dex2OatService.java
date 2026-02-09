@@ -151,7 +151,7 @@ public class Dex2OatService implements Runnable {
                 }
             } catch (ErrnoException e) {
                 Log.e(TAG, "Check mount failed for " + bin, e);
-                return true;
+                return false;
             }
         }
         Log.d(TAG, "Check mount succeeded");
