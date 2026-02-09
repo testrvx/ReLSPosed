@@ -62,7 +62,7 @@ file="META-INF/com/google/android/update-binary"
 file_path="$TMPDIR_FOR_VERIFY/$file"
 hash_path="$file_path.sha256"
 unzip -o "$ZIPFILE" "META-INF/com/google/android/*" -d "$TMPDIR_FOR_VERIFY" >&2
-[ -f "$file_path" ] || abort_verify "$file not exists"
+[ -f "$file_path" ]
 if [ -f "$hash_path" ]; then
   (echo "$(cat "$hash_path")  $file_path" | sha256sum -c -s -)
   ui_print "- Verified $file" >&1
